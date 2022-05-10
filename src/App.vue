@@ -34,41 +34,38 @@
                 type="radio"
                 name="frequency"
                 id="weekly"
-                value="weekly"
+                value="0"
                 checked="checked"
                 v-model="frequency"
               />
               Weekly
             </label>
-
             <label class="frequency_label" for="biweekly">
               <input
                 type="radio"
                 name="frequency"
                 id="biweekly"
-                value="biweekly"
+                value="1"
                 v-model="frequency"
               />
               Bi-Weekly
             </label>
-
             <label class="frequency_label" for="triweekly">
               <input
                 type="radio"
                 name="frequency"
                 id="triweekly"
-                value="triweekly"
+                value="2"
                 v-model="frequency"
               />
               Tri-Weekly
             </label>
-
             <label class="frequency_label" for="monthly">
               <input
                 type="radio"
                 name="frequency"
                 id="monthly"
-                value="monthly"
+                value="3"
                 v-model="frequency"
               />
               Monthly
@@ -87,7 +84,7 @@
                   value="monday"
                   @click="
                     () => {
-                      selectDate('monday');
+                      selectDate(1);
                     }
                   "
                 />
@@ -103,7 +100,7 @@
                   value="tuesday"
                   @click="
                     () => {
-                      selectDate('tuesday');
+                      selectDate(2);
                     }
                   "
                 />
@@ -119,7 +116,7 @@
                   value="wednesday"
                   @click="
                     () => {
-                      selectDate('wednesday');
+                      selectDate(3);
                     }
                   "
                 />
@@ -135,7 +132,7 @@
                   value="thursday"
                   @click="
                     () => {
-                      selectDate('thursday');
+                      selectDate(4);
                     }
                   "
                 />
@@ -151,7 +148,7 @@
                   value="friday"
                   @click="
                     () => {
-                      selectDate('friday');
+                      selectDate(5);
                     }
                   "
                 />
@@ -167,7 +164,7 @@
                   value="saturday"
                   @click="
                     () => {
-                      selectDate('saturday');
+                      selectDate(6);
                     }
                   "
                 />
@@ -183,7 +180,7 @@
                   value="sunday"
                   @click="
                     () => {
-                      selectDate('sunday');
+                      selectDate(0);
                     }
                   "
                 />
@@ -208,13 +205,49 @@
             :min="new Date().toISOString().split('T')[0]"
           />
         </div>
+        <input
+          class="button"
+          type="button"
+          value="Click to Calculate"
+          @click="calculate"
+        />
       </div>
     </div>
     <div class="right">
-      <div class="calendar">
-        <input type="button" value="Click to calculate" @click="calculate" />
+      <div class="list">
+        <h2 v-if="config">Selected Days</h2>
+        <div class="selected_days" v-if="config">
+          <div class="selected_days_li" v-for="day in config" :key="day[0]">
+            <p class="selected_day_date">
+              {{ day[0].toISOString().split("T")[0] }}
+            </p>
+            <div
+              class="selected_day_info"
+              v-for="episode in day[1]"
+              :key="episode.mal_id"
+            >
+              <div class="selected_day_header">
+                <h3 class="selected_day_title">{{ episode.title }}</h3>
+                <p class="selected_day_runtime">
+                  {{ Math.round((episode.duration / 60) * 100) / 100 }}m
+                </p>
+              </div>
+              <div class="episode_info">
+                <p class="selected_day_episode_number">
+                  Episode {{ episode.mal_id }}
+                </p>
+                <p v-if="episode.filler" class="red_text">FILLER</p>
+                <p v-if="episode.recap" class="red_text">RECAP</p>
+              </div>
+
+              <p class="selected_day_description">
+                {{ episode.synopsis }}
+              </p>
+              <hr style="color: var(--c2); background-color: var(--c2)" />
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="list"></div>
     </div>
   </div>
 </template>
@@ -224,6 +257,12 @@ import "v-calendar/dist/style.css";
 
 import { episodes } from "@/assets/data.js";
 
+Date.prototype.addDays = function (days) {
+  var date = new Date(this.valueOf());
+  date.setDate(date.getDate() + days);
+  return date;
+};
+
 export default {
   name: "App",
   components: {},
@@ -231,10 +270,11 @@ export default {
     return {
       days: [],
       range: `1-${episodes.length}`,
-      frequency: "weekly",
+      frequency: "0",
       hours: "1.0",
       end_date: "",
       filler: false,
+      config: null,
     };
   },
   methods: {
@@ -262,7 +302,7 @@ export default {
         alert("Please enter an end date");
         return;
       }
-
+      let frequency = parseInt(this.frequency);
       let start_date = new Date();
       let end_date;
       try {
@@ -274,6 +314,11 @@ export default {
       let hours;
       try {
         hours = parseFloat(this.hours);
+        if (hours > 24 || hours < 0) {
+          throw new Error(
+            "Hours per day cannot be greater than 24 or less than 0"
+          );
+        }
       } catch (e) {
         alert("Please enter a valid number for hours.");
         return;
@@ -283,20 +328,62 @@ export default {
       for (let range of ranges) {
         if (range.includes("-")) {
           let range_split = range.split("-");
-          let start = Number(range_split[0] - 1);
-          let end = Number(range_split[1]);
-          if (this.filler) {
-            included_episodes = included_episodes.concat(
-              episodes.slice(start, end)
+          if (range_split.length > 2) {
+            alert(
+              `Please enter a valid range. (Range ${range} had more than one '-')`
             );
-          } else {
-            included_episodes = included_episodes.concat(
-              episodes.slice(start, end).filter((episode) => !episode.filler)
-            );
+            return;
           }
+          let start_str = range_split[0];
+          if (start_str == "") {
+            alert(
+              `Please enter a valid range. (Range ${range} included '-' but the left number was empty)`
+            );
+            return;
+          }
+          let start = parseInt(start_str) - 1;
+          let end_str = range_split[1];
+          if (end_str == "") {
+            alert(
+              `Please enter a valid range. (Range ${range} included '-' but the right number was empty)`
+            );
+            return;
+          }
+          let end = parseInt(end_str);
+          if (end > episodes.length || start < 0) {
+            alert(
+              `Please enter a valid range. (Episode ${end} doesn't exist!)`
+            );
+            return;
+          } else if (start > end) {
+            alert(
+              `Please enter a valid range. (Episode ${start} is after episode ${end})`
+            );
+            return;
+          }
+          included_episodes = included_episodes.concat(
+            episodes
+              .slice(start, end)
+              .filter(
+                (episode) =>
+                  (!episode.filler || this.filler) &&
+                  !included_episodes.includes(episode)
+              )
+          );
         } else {
-          let episode = episodes[Number(range - 1)];
-          if (episode && ((this.filler && episode.filler) || !this.filler)) {
+          let index = parseInt(range) - 1;
+          if (index > episodes.length || index < 0) {
+            alert(
+              `Please enter a valid range. (Episode ${index} doesn't exist!)`
+            );
+            return;
+          }
+          let episode = episodes[index];
+          if (
+            episode &&
+            (!episode.filler || this.filler) &&
+            !included_episodes.includes(episode)
+          ) {
             included_episodes.push(episode);
           }
         }
@@ -307,7 +394,7 @@ export default {
       );
       let total_hours = total_seconds / 3600;
       let hours_per_week = hours * this.days.length;
-      let weeks = total_hours / hours_per_week;
+      let weeks = (total_hours / hours_per_week) * (frequency + 1);
       let weeks_between = weeksBetween(start_date, end_date);
       console.log(
         `Should take ${weeks} weeks with weeks between now and end date being ${weeks_between}`
@@ -315,10 +402,35 @@ export default {
       if (weeks_between < weeks) {
         alert("You don't have enough time to complete this task.");
         return;
-      } else {
-        alert("You have enough time to complete this task.");
-        return;
       }
+
+      let days = [];
+      let currentDay = start_date;
+      let index = 0;
+      while (currentDay <= end_date && index < included_episodes.length) {
+        if (this.days.includes(currentDay.getDay())) {
+          let current_episodes = [];
+          let total_time = 0;
+          while (total_time < hours && index < included_episodes.length) {
+            let episode = included_episodes[index];
+            let duration = episode.duration / 3600;
+            if (duration + total_time <= hours) {
+              current_episodes.push(episode);
+              total_time += duration;
+              index++;
+            } else {
+              break;
+            }
+          }
+          days.push([currentDay, current_episodes]);
+        }
+        currentDay = currentDay.addDays(1);
+        if (currentDay.getDay() === 0 && frequency > 0) {
+          currentDay = currentDay.addDays(7 * frequency);
+        }
+      }
+      console.log(days);
+      this.config = days;
     },
   },
 };
@@ -377,6 +489,10 @@ h2 {
   color: white;
 }
 
+.red_text {
+  color: red;
+}
+
 /* Left Side */
 
 .title {
@@ -403,7 +519,6 @@ h2 {
 }
 
 hr {
-  color: var(--c4);
   width: 80%;
   height: 5px;
   border-width: 0;
@@ -513,6 +628,7 @@ hr {
 
 .date_choice > input[type="checkbox"]:checked ~ p {
   color: white;
+  transition-duration: 0.1s;
 }
 
 .hours {
@@ -542,15 +658,76 @@ hr {
   text-align: center;
 }
 
-/* Right Side */
-
-.calendar {
-  width: 100%;
-  height: 50%;
+.button {
+  transition-duration: 0.1s;
+  background-color: var(--c4);
+  border: none;
+  width: 25%;
+  height: 50px;
+  border-radius: 10px;
 }
+
+.button:hover {
+  background-color: var(--primary); /* Green */
+  color: white;
+}
+
+/* Right Side */
 
 .list {
   width: 100%;
-  height: 50%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.selected_days {
+  height: 100%;
+  width: 80%;
+  max-width: 80%;
+  margin: 10px;
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
+
+.selected_day_date {
+  font-size: 1.25em;
+  color: black;
+}
+
+.selected_days_li {
+  padding: 2px;
+  margin: 10px;
+  background-color: var(--c5);
+  border-radius: 10px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.selected_day_info {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  width: 90%;
+}
+
+.selected_day_header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.episode_info {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
 }
 </style>
