@@ -252,8 +252,35 @@
                 <p class="selected_day_episode_number">
                   Episode {{ episode.mal_id }}
                 </p>
-                <p v-if="episode.filler" class="red_text">FILLER</p>
-                <p v-if="episode.recap" class="red_text">RECAP</p>
+                <a
+                  href="https://www.animefillerlist.com/shows/one-piece"
+                  target="_blank"
+                  v-if="episode.filler"
+                  class="red_text"
+                  >FILLER</a
+                >
+                <a
+                  href="https://www.animefillerlist.com/shows/one-piece"
+                  target="_blank"
+                  v-if="episode.recap"
+                  class="red_text"
+                  >RECAP</a
+                >
+                <a
+                  href="https://www.animefillerlist.com/shows/one-piece"
+                  target="_blank"
+                  v-if="episode.mixed"
+                  style="color: #0b3f6a"
+                >
+                  MIXED CANON/FILLER
+                </a>
+                <a
+                  href="https://www.animefillerlist.com/shows/one-piece"
+                  target="_blank"
+                  v-if="episode.anime_canon"
+                  style="color: black"
+                  >Strictly Anime Canon</a
+                >
               </div>
 
               <p class="selected_day_description">
