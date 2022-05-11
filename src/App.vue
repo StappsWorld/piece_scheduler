@@ -26,6 +26,7 @@
             <label for="filler">Include Filler</label>
           </div>
         </div>
+
         <div class="frequency">
           <h2>Frequency</h2>
           <form class="labels">
@@ -72,6 +73,7 @@
             </label>
           </form>
         </div>
+
         <div class="weekdays">
           <h2>Weekdays</h2>
           <form class="dates">
@@ -194,16 +196,30 @@
           <h2>Hours Per Day</h2>
           <input v-model="hours" class="colored_input" type="text" />
         </div>
+
         <div class="end_date">
-          <h2>End Date</h2>
-          <input
-            v-model="end_date"
-            class="end_date_picker"
-            type="date"
-            name="end_date"
-            id="end_date"
-            :min="new Date().toISOString().split('T')[0]"
-          />
+          <div class="check_end_date_div">
+            <input
+              type="checkbox"
+              name="check_end_date"
+              id="check_end_date"
+              v-model="check_end"
+            />
+            <label for="check_end_date"
+              ><p style="color: white">Check End Date?</p></label
+            >
+          </div>
+          <div class="end_date" v-if="check_end">
+            <h2>End Date</h2>
+            <input
+              v-model="end_date"
+              class="end_date_picker"
+              type="date"
+              name="end_date"
+              id="end_date"
+              :min="new Date().toISOString().split('T')[0]"
+            />
+          </div>
         </div>
         <input
           class="button"
@@ -219,7 +235,7 @@
         <div class="selected_days" v-if="config">
           <div class="selected_days_li" v-for="day in config" :key="day[0]">
             <p class="selected_day_date">
-              {{ day[0].toISOString().split("T")[0] }}
+              {{ day[0].toLocaleString().split(",")[0] }}
             </p>
             <div
               class="selected_day_info"
@@ -275,15 +291,18 @@ export default {
       end_date: "",
       filler: false,
       config: null,
+      check_end: false,
     };
   },
   methods: {
     selectDate(date) {
+      console.log(date);
       if (this.days.includes(date)) {
         this.days = this.days.filter((day) => day !== date);
       } else {
         this.days.push(date);
       }
+      console.log(this.days);
     },
     calculate() {
       if (!this.range) {
@@ -298,18 +317,22 @@ export default {
         alert("Please enter hours per day");
         return;
       }
-      if (!this.end_date) {
+      if (!this.end_date && this.check_end) {
         alert("Please enter an end date");
         return;
       }
       let frequency = parseInt(this.frequency);
       let start_date = new Date();
       let end_date;
-      try {
-        end_date = new Date(this.end_date);
-      } catch (e) {
-        alert("Please enter a valid date.");
-        return;
+      if (this.check_end) {
+        try {
+          end_date = new Date(this.end_date);
+        } catch (e) {
+          alert("Please enter a valid date.");
+          return;
+        }
+      } else {
+        end_date = new Date(8640000000000000);
       }
       let hours;
       try {
@@ -475,14 +498,15 @@ body {
 }
 
 .left {
-  width: 25vw;
-  height: 100vh;
+  width: 25%;
+  height: 100%;
   background-color: var(--c2);
+  overflow: scroll;
 }
 
 .right {
-  width: 75vw;
-  height: 100vh;
+  width: 75%;
+  height: 100%;
 }
 
 h2 {
@@ -496,7 +520,7 @@ h2 {
 /* Left Side */
 
 .title {
-  height: 4vh;
+  height: 4%;
 }
 
 .logo_img {
@@ -513,7 +537,7 @@ h2 {
 }
 
 .name > h1 {
-  font-size: 3em;
+  font-size: 150%;
   padding: 5px;
   margin: 5px;
 }
@@ -532,7 +556,7 @@ hr {
   flex-direction: column;
   align-items: center;
   justify-content: space-evenly;
-  height: 95vh;
+  height: 96%;
   width: 100%;
 }
 
@@ -550,7 +574,7 @@ hr {
   align-items: center;
   justify-content: center;
   margin-top: 20px;
-  font-size: 2em;
+  font-size: 100%;
   color: var(--c4);
 }
 
@@ -558,7 +582,7 @@ hr {
   background-color: var(--c3);
   border: none;
   width: 50%;
-  height: 50px;
+  height: 100%;
   border-radius: 10px;
   color: white;
   font-size: 1em;
@@ -573,7 +597,7 @@ hr {
 }
 
 .frequency_label {
-  font-size: 2.25em;
+  font-size: 125%;
   color: var(--c4);
 }
 
@@ -592,6 +616,10 @@ hr {
 .dates {
   display: flex;
   flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  width: 100%;
 }
 
 .date_choice {
@@ -602,8 +630,8 @@ hr {
   background-color: var(--c3);
   border-radius: 50%;
   margin: 5px;
-  width: 3.25rem;
-  height: 3.25rem;
+  width: 3.25em;
+  height: 3.25em;
 }
 
 .date_choice:hover {
@@ -616,7 +644,7 @@ hr {
   z-index: 10000;
   user-select: none;
   color: var(--c4);
-  font-size: 2rem;
+  font-size: 125%;
 }
 
 .date_choice > input[type="checkbox"] {
@@ -647,6 +675,14 @@ hr {
   width: 100%;
 }
 
+.check_end_date_div {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
 .end_date_picker {
   background-color: var(--c3);
   border: none;
@@ -654,7 +690,7 @@ hr {
   height: 50px;
   border-radius: 10px;
   color: white;
-  font-size: 2em;
+  font-size: 125%;
   text-align: center;
 }
 
@@ -663,6 +699,7 @@ hr {
   background-color: var(--c4);
   border: none;
   width: 25%;
+  min-width: 125px;
   height: 50px;
   border-radius: 10px;
 }
