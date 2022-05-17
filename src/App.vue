@@ -364,7 +364,7 @@ export default {
       let hours;
       try {
         hours = parseFloat(this.hours);
-        if (hours > 24 || hours < 0) {
+        if (hours > 24 || hours <= 0) {
           throw new Error(
             "Hours per day cannot be greater than 24 or less than 0"
           );
